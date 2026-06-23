@@ -417,7 +417,10 @@
 
     els.shelfList.addEventListener("click", (event) => {
       const item = event.target.closest(".shelf-item");
-      if (item) switchDocument(item.dataset.documentId, true);
+      if (item) {
+        switchDocument(item.dataset.documentId, true);
+        closePanels();
+      }
     });
 
     els.tocList.addEventListener("click", (event) => {
