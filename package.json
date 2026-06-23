@@ -1,0 +1,13 @@
+{
+  "name": "qinghua-product-ebook",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/reader-core.test.js",
+    "check": "node --check app.js && node --check reader-core.js && node --test tests/reader-core.test.js",
+    "qa": "node tests/mobile-qa.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  }
+}

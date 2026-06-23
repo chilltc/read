@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="green">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="王慧文清华产品课移动端电子书">
+    <meta name="theme-color" content="#e9f0df">
+    <title>王慧文清华产品课</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="progress-track" aria-hidden="true"><div id="progressBar"></div></div>
+
+    <header class="app-header">
+      <button class="icon-btn" id="tocButton" type="button" aria-label="目录" data-tooltip="目录">
+        <span class="hamburger" aria-hidden="true"></span>
+      </button>
+      <div class="title-stack">
+        <strong id="currentTitle">王慧文清华产品课</strong>
+        <span id="readingMeta">0%</span>
+      </div>
+      <button class="icon-btn typography-icon" id="settingsButton" type="button" aria-label="阅读设置" data-tooltip="阅读设置">Aa</button>
+    </header>
+
+    <main class="reader" id="reader" tabindex="-1"></main>
+
+    <footer class="reader-footer" aria-label="阅读导航">
+      <button id="prevChapter" class="footer-btn" type="button" aria-label="上一章">
+        <span aria-hidden="true">‹</span>
+      </button>
+      <button id="resumeButton" class="footer-status" type="button">继续阅读</button>
+      <button id="nextChapter" class="footer-btn" type="button" aria-label="下一章">
+        <span aria-hidden="true">›</span>
+      </button>
+    </footer>
+
+    <div class="scrim" id="scrim" hidden></div>
+
+    <aside class="drawer" id="tocDrawer" aria-labelledby="tocTitle" aria-hidden="true">
+      <div class="sheet-header">
+        <h2 id="tocTitle">目录</h2>
+        <button class="icon-btn close-btn" type="button" data-close aria-label="关闭" data-tooltip="关闭">×</button>
+      </div>
+      <div id="shelfList" class="shelf-list" aria-label="书架"></div>
+      <nav id="tocList" class="toc-list"></nav>
+    </aside>
+
+    <section class="settings-sheet" id="settingsSheet" aria-labelledby="settingsTitle" aria-hidden="true">
+      <div class="sheet-header">
+        <h2 id="settingsTitle">阅读设置</h2>
+        <button class="icon-btn close-btn" type="button" data-close aria-label="关闭" data-tooltip="关闭">×</button>
+      </div>
+
+      <div class="setting-group">
+        <span class="setting-label">背景</span>
+        <div class="segmented" role="group" aria-label="背景模式">
+          <button type="button" data-theme="auto">自动</button>
+          <button type="button" data-theme="paper">纸张</button>
+          <button type="button" data-theme="green">护眼</button>
+          <button type="button" data-theme="night">夜间</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <span class="setting-label">工具栏</span>
+        <div class="segmented segmented-two" role="group" aria-label="工具栏显示">
+          <button type="button" data-controls-mode="auto">自动</button>
+          <button type="button" data-controls-mode="always">常驻</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label">字号</span>
+        <div class="stepper">
+          <button type="button" data-font="-1" aria-label="减小字号">A-</button>
+          <output id="fontValue">18</output>
+          <button type="button" data-font="1" aria-label="增大字号">A+</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label">行距</span>
+        <input id="lineHeightRange" type="range" min="1.55" max="2.15" step="0.05" value="1.8" aria-label="行距">
+      </div>
+
+      <div class="setting-row">
+        <span class="setting-label">宽度</span>
+        <input id="widthRange" type="range" min="34" max="44" step="1" value="39" aria-label="正文宽度">
+      </div>
+    </section>
+
+    <script src="ebook-data.js"></script>
+    <script src="reader-core.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
