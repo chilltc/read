@@ -1,0 +1,21 @@
+{
+  "_comment": "书架清单。把书放进 books/ 文件夹，在这里加一条记录，然后跑：python3 scripts/ingest.py",
+  "_schema": {
+    "id": "唯一英文 id（用于 ebook-data / brain-data 关联，建议 kebab-case）",
+    "title": "书名（显示用）",
+    "subtitle": "副标题/作者（可选）",
+    "category": "书架分组名（可选，默认 未分类）",
+    "source": "相对路径，如 books/xxx.pdf / .txt / .md",
+    "headings": "可选：人工指定的章节标题数组，用于覆盖自动识别（排版差的 PDF 才需要）"
+  },
+  "libraryTitle": "移动阅读书架",
+  "books": [
+    {
+      "id": "qinghua-product-course",
+      "title": "王慧文清华产品课",
+      "subtitle": "Allen 修订版",
+      "category": "产品",
+      "source": "books/王慧文清华产品课Allen修订版.pdf"
+    }
+  ]
+}

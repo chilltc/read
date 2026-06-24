@@ -123,6 +123,80 @@
     return `${baseKey}:${documentId}`;
   }
 
+  // --- Brain Page（书镜）锚点匹配 ---
+  // 把脑页数据（inline 就近映射 + chapters 章末小结）定位到正文 blocks 的具体位置。
+  // 返回纯数据，便于在 renderBook 里按 block index 注入，也便于单测。
+
+  function normalizeAnchor(value) {
+    // 去掉所有空白并小写化，用于模糊匹配（容忍重建后细微差异）。
+    return String(value || "")
+      .replace(/\s+/g, "")
+      .toLowerCase();
+  }
+
+  function resolveBrainPlacements(brainDoc, blocks) {
+    const result = { inlineByIndex: new Map(), recapByIndex: new Map() };
+    if (!brainDoc || !Array.isArray(blocks) || !blocks.length) return result;
+
+    // 1) inline：每条 afterText 匹配一个 paragraph/qa 段落开头，插在该段之后。
+    const inlineEntries = Array.isArray(brainDoc.inline) ? brainDoc.inline : [];
+    const usedBlocks = new Set();
+    inlineEntries.forEach((entry) => {
+      const anchor = normalizeAnchor(entry && entry.afterText);
+      if (!anchor) return;
+      let matchIndex = -1;
+      for (let i = 0; i < blocks.length; i += 1) {
+        if (usedBlocks.has(i)) continue;
+        const block = blocks[i];
+        if (block.type !== "paragraph" && block.type !== "qa") continue;
+        const text = normalizeAnchor(block.text);
+        if (text.startsWith(anchor) || text.includes(anchor)) {
+          matchIndex = i;
+          break;
+        }
+      }
+      if (matchIndex === -1) return;
+      usedBlocks.add(matchIndex);
+      if (!result.inlineByIndex.has(matchIndex)) result.inlineByIndex.set(matchIndex, []);
+      result.inlineByIndex.get(matchIndex).push(entry);
+    });
+
+    // 2) chapters：anchorTitle 匹配 heading，recap 插在该章末尾
+    //    （下一个同级或更高级 heading 之前，或文档结尾）。
+    const chapterEntries = Array.isArray(brainDoc.chapters) ? brainDoc.chapters : [];
+    const usedHeadings = new Set();
+    chapterEntries.forEach((entry) => {
+      const anchor = normalizeAnchor(entry && entry.anchorTitle);
+      if (!anchor) return;
+      let headingIndex = -1;
+      for (let i = 0; i < blocks.length; i += 1) {
+        if (usedHeadings.has(i)) continue;
+        const block = blocks[i];
+        if (block.type !== "heading") continue;
+        const text = normalizeAnchor(block.text);
+        if (text === anchor || text.includes(anchor) || anchor.includes(text)) {
+          headingIndex = i;
+          break;
+        }
+      }
+      if (headingIndex === -1) return;
+      usedHeadings.add(headingIndex);
+
+      const depth = Number(blocks[headingIndex].depth) || 1;
+      let endIndex = blocks.length - 1;
+      for (let j = headingIndex + 1; j < blocks.length; j += 1) {
+        const block = blocks[j];
+        if (block.type === "heading" && (Number(block.depth) || 1) <= depth) {
+          endIndex = j - 1;
+          break;
+        }
+      }
+      result.recapByIndex.set(endIndex, entry);
+    });
+
+    return result;
+  }
+
   return {
     clampSettings,
     resolveEffectiveTheme,
@@ -132,5 +206,7 @@
     resolveTocTarget,
     normalizeLibrary,
     documentStateKey,
+    normalizeAnchor,
+    resolveBrainPlacements,
   };
 });

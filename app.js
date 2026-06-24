@@ -1,5 +1,6 @@
 (function () {
   const rawData = window.EBOOK_DATA;
+  const brainData = window.BRAIN_DATA || {};
   const core = window.ReaderCore;
   const settingsKey = "qinghua-product-ebook:settings:v2";
   const activeDocumentKey = "qinghua-product-ebook:active-document:v2";
@@ -114,8 +115,35 @@
       .filter(Boolean);
   }
 
+  function brainInlineHtml(entries) {
+    return entries
+      .map((entry) => {
+        const note = escapeHtml(entry.note || "");
+        const ref = entry.ref ? `<cite class="brain-ref">${escapeHtml(entry.ref)}</cite>` : "";
+        return `<aside class="brain-inline">
+          <button class="brain-toggle" type="button" aria-expanded="false">🪞 我的</button>
+          <div class="brain-body" hidden><p>${note}</p>${ref}</div>
+        </aside>`;
+      })
+      .join("");
+  }
+
+  function brainRecapHtml(entry) {
+    const core_ = entry.coreIdea
+      ? `<p class="brain-core"><strong>作者核心：</strong>${escapeHtml(entry.coreIdea)}</p>`
+      : "";
+    const recap = entry.recap ? `<p>${escapeHtml(entry.recap)}</p>` : "";
+    const ref = entry.ref ? `<cite class="brain-ref">${escapeHtml(entry.ref)}</cite>` : "";
+    return `<aside class="brain-recap">
+      <h4 class="brain-recap-title">🪞 写给我自己</h4>
+      ${core_}${recap}${ref}
+    </aside>`;
+  }
+
   function renderBook() {
     const blocks = documentData.blocks || [];
+    const brainDoc = brainData[documentData.id];
+    const placements = core.resolveBrainPlacements(brainDoc, blocks);
     const html = [
       `<section class="book-cover" data-page="1">
         <span class="book-kicker">${escapeHtml(library.title)}</span>
@@ -131,13 +159,9 @@
         html.push(
           `<${tag} id="${slug(index)}" class="book-heading" ${pageAttr}>${escapeHtml(block.text)}</${tag}>`
         );
-        return;
-      }
-      if (block.type === "qa") {
+      } else if (block.type === "qa") {
         html.push(`<p class="qa-block" ${pageAttr}>${escapeHtml(block.text)}</p>`);
-        return;
-      }
-      if (block.type === "figures") {
+      } else if (block.type === "figures") {
         const images = (block.images || [])
           .map((image) => {
             const width = Number(image.width) || "";
@@ -155,9 +179,15 @@
             <figcaption>第 ${block.page} 页配图</figcaption>
           </figure>`
         );
-        return;
+      } else {
+        html.push(`<p ${pageAttr}>${escapeHtml(block.text)}</p>`);
       }
-      html.push(`<p ${pageAttr}>${escapeHtml(block.text)}</p>`);
+
+      // Brain Page 注入：先内联映射（紧随段落），再章末小结。
+      const inlineEntries = placements.inlineByIndex.get(index);
+      if (inlineEntries && inlineEntries.length) html.push(brainInlineHtml(inlineEntries));
+      const recapEntry = placements.recapByIndex.get(index);
+      if (recapEntry) html.push(brainRecapHtml(recapEntry));
     });
 
     els.reader.innerHTML = html.join("");
@@ -541,6 +571,17 @@
       }
     });
     els.reader.addEventListener("click", (event) => {
+      const toggle = event.target.closest(".brain-toggle");
+      if (toggle) {
+        const body = toggle.parentElement.querySelector(".brain-body");
+        if (body) {
+          const isHidden = body.hasAttribute("hidden");
+          if (isHidden) body.removeAttribute("hidden");
+          else body.setAttribute("hidden", "");
+          toggle.setAttribute("aria-expanded", String(isHidden));
+        }
+        return;
+      }
       const image = event.target.closest(".figure-item img");
       if (image) {
         openImage(image);

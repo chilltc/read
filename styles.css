@@ -471,6 +471,86 @@ h4.book-heading {
   text-align: left;
 }
 
+/* --- Brain Page（书镜）：穿插正文的个人映射 --- */
+/* 内联映射：紧随相关段落，默认折叠为一枚小标签，点开看内容。 */
+.brain-inline {
+  margin: 0.5em 0 0.9em;
+}
+
+.brain-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 12px;
+  font-size: 0.82em;
+  line-height: 1.4;
+  color: var(--accent);
+  background: var(--soft-tint);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.brain-toggle:active {
+  transform: scale(0.97);
+}
+
+.brain-body {
+  margin-top: 8px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--accent-2);
+  border-radius: 0 8px 8px 0;
+  background: var(--soft-surface);
+  font-size: calc(var(--reader-font-size) - 1px);
+  line-height: var(--reader-line-height);
+}
+
+.brain-body p {
+  margin: 0;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+/* 章末整合小结：始终展开的卡片，区别于内联标签。 */
+.brain-recap {
+  margin: 1.6em 0 1.8em;
+  padding: 16px 18px;
+  border: 1px solid var(--hairline);
+  border-left: 4px solid var(--accent);
+  border-radius: 12px;
+  background: var(--soft-surface);
+  box-shadow: var(--shadow);
+}
+
+.brain-recap-title {
+  margin: 0 0 0.6em;
+  font-size: 0.92em;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.brain-recap p {
+  margin: 0.5em 0;
+  font-size: calc(var(--reader-font-size) - 1px);
+  line-height: var(--reader-line-height);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.brain-core strong {
+  color: var(--accent);
+}
+
+.brain-ref {
+  display: block;
+  margin-top: 0.7em;
+  font-size: 0.76em;
+  font-style: normal;
+  color: var(--muted);
+  opacity: 0.85;
+}
+
 .figure-group {
   margin: 1.4em 0 1.8em;
   padding: 0;
