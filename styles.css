@@ -485,6 +485,7 @@ h4.book-heading {
 .figure-item {
   display: grid;
   align-items: center;
+  justify-items: center;
   aspect-ratio: var(--image-ratio, 4 / 3);
   min-height: 112px;
   padding: 8px;
@@ -492,6 +493,7 @@ h4.book-heading {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.28);
   cursor: zoom-in;
+  overflow: hidden;
 }
 
 :root[data-theme="night"] .figure-item {
@@ -500,8 +502,10 @@ h4.book-heading {
 
 .figure-item img {
   display: block;
-  width: 100%;
-  max-height: 46vh;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   border-radius: 5px;
 }
