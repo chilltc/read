@@ -39,11 +39,12 @@
 
 | 文件 | 职责 |
 |---|---|
-| `books/` | 拖书进来的入口。放 PDF/TXT/MD + `manifest.json` 登记 |
-| `books/manifest.json` | 书架清单：每本书的 id/标题/副标题/分类/源文件路径（顶部有 schema 注释） |
-| `scripts/ingest.py` | **通用** ingest：按 manifest 把书解析成 `ebook-data.js`。一条命令重建整个书架 |
+| `books/` | 拖书进来的入口。放 PDF/TXT/MD 即可——`ingest.py` 会自动登记到 manifest |
+| `books/manifest.json` | 书架清单：每本书的 id/标题/副标题/分类/源文件路径（顶部有 schema 注释）。新文件自动追加，可手动改 title 等 |
+| `scripts/ingest.py` | **通用** ingest：扫描 `books/` 自动发现新文件并登记，解析成 `ebook-data.js`。一条命令重建整个书架 |
 | `ebook-data.js` | 原书数据 `window.EBOOK_DATA = {libraryTitle, documents:[{id,title,blocks,outline,...}]}`。由 ingest 生成，勿手改 |
-| `brain-data.js` | 脑页数据 `window.BRAIN_DATA`。顶部有完整 schema 注释。由 brain-page 技能生成，也可手改 |
+| `brain-data.js` | 脑页数据 `window.BRAIN_DATA`。顶部有完整 schema 注释。由 brain-page 流程生成，也可手改 |
+| `brain/HOW-TO-GENERATE.md` | **中立流程文档**：脑页生成的单一事实来源，任何 AI（Claude/Codex/Cursor）读了能照做 |
 | `brain/<id>.md` | 脑页的人类可读源，便于精读 / 迭代 / 交给别的 AI |
 | `index.html` | DOM 骨架。按顺序加载 ebook-data → brain-data → reader-core → app |
 | `app.js` | 主逻辑：渲染、进度、主题、目录。`renderBook()` 注入脑页块；脑页折叠交互在 reader 的 click 委托里 |
@@ -96,9 +97,15 @@ npm run check                     # node --check + 单测
 - `read` 是公开仓库（GitHub Pages）；`brain-data.js` 可提交，但内容须符合上面的转述原则。
 - brain-page 技能第 4 步用 `/codex` 校验家庭/职业事实，第 5 步做隐私扫描。
 
+## 加新书（前置步骤）
+
+把 PDF/txt/md 丢进 `read/books/`，跑 `python3 scripts/ingest.py`（会**自动发现**新文件、
+登记到 manifest 并解析）。然后才能对这本书生成脑页。详见 `read/ARCHITECTURE.md`。
+
 ## 给接手的 AI
 
 - 改阅读器渲染 → 看 `app.js renderBook()` + `reader-core.js`，改完跑 `npm run check`。
-- 改脑页生成流程 → 看 `~/.claude/skills/brain-page/SKILL.md`（流程即文档）。
-- 加书解析能力 → 看 `scripts/ingest.py`（启发式标题识别在 `guess_heading_depth`）。
+- **生成脑页 → 读 `brain/HOW-TO-GENERATE.md`**（中立流程，不绑定任何 AI；Claude Code 的
+  `~/.claude/skills/brain-page/SKILL.md` 只是指向它的薄封装）。
+- 加书解析能力 → 看 `scripts/ingest.py`（标题识别在 `guess_heading_depth`，自动发现在 `discover_and_register`）。
 - 人生语料库的结构 → 看 `Blog/wiki/CLAUDE.md` 和 `index.md`。
