@@ -1,13 +1,14 @@
 # 架构说明 / ARCHITECTURE
 
-移动端电子书阅读器 + **书镜（Brain Page）** 个性化读书系统。
+移动端电子书阅读器 + 个性化读书系统。
 本文件是给人和 AI 看的全局地图——接手前先读这一页。
 
 ## 这是什么
 
-1. **阅读器**：纯静态网页（微信里看），书架 + 章节目录 + 阅读进度 + 四套主题。
-2. **书镜 / Brain Page**：把每本书的观点映射到主人（Changgeng）的真实人生经历，
-   作为可折叠块**穿插在正文里**，越读越懂自己。灵感来自 Garry Tan 的 book-mirror。
+两条核心动作：
+1. **解析1（入库）**：把任何格式的书（PDF/epub/mobi/txt）转成阅读器能读的、排版好的数据。
+2. **解析2（解读）**：把每本书的观点映射到主人（Changgeng）的真实人生经历，作为可折叠块
+   **穿插在正文里**，越读越懂自己。灵感来自 Garry Tan 的 book-mirror。
 
 ## 数据流
 
@@ -78,10 +79,10 @@ window.BRAIN_DATA["<book-id>"] = {
 ## 常用命令
 
 ```bash
-# 加新书：放进 books/，在 manifest.json 加一条，然后：
+# 解析1（入库）：把书丢进 books/，然后跑（自动发现+登记+解析）：
 python3 scripts/ingest.py
 
-# 生成脑页（在 Claude Code 里）：对某本书说「生成脑页」/「书镜」
+# 解析2（解读）：在 Claude Code/Codex 里对某本书说「解析2 X」/「解读 X」
 
 # 本地预览
 python3 -m http.server 8081      # 打开 http://localhost:8081

@@ -1,9 +1,10 @@
-# 如何生成一本书的「脑页 / Brain Page」
+# 如何生成一本书的个性化解读（「解析2」）
 
 > 这是**中立流程文档**：不绑定任何具体 AI。Claude、Codex、Cursor 或任何能读文件、
-> 跑命令的 AI 助手，读完这份就能照着给一本书生成脑页。
+> 跑命令的 AI 助手，读完这份就能照着给一本书生成个性化解读。
 >
-> （Claude Code 用户：`~/.claude/skills/brain-page/SKILL.md` 只是指向这份文档的薄封装。
+> 术语：**解析1** = 把书转成可读数据（见文末「加新书」）；**解析2** = 本文档讲的、
+> 把书的观点映射到用户人生经历。（Claude Code 用户：`解析` 技能只是指向这份文档的薄封装。
 > 真正的流程以本文件为准——**单一事实来源**，改流程只改这里。）
 
 ## 这是什么
@@ -161,7 +162,10 @@ cd read && python3 -m http.server 8081      # 打开对应书
 4. 画像与事实从 wiki 读，不假设、不套别人背景、不编造。
 5. 隐私：转述为主，原文留 Blog。
 
-## 加新书（前置步骤）
+## 加新书（前置步骤 = 解析1）
 
-把 PDF/txt/md 丢进 `read/books/`，跑 `python3 scripts/ingest.py`（会自动登记并解析）。
-然后才能对这本书生成脑页。详见 `read/ARCHITECTURE.md`。
+把书丢进 `read/books/`，跑 `python3 scripts/ingest.py`（自动发现新文件、登记、解析）。
+- 支持 PDF / txt / md；txt 会被重新分段排版。
+- **epub / mobi**：当前 ingest 走文本抽取，先用 `pandoc`（epub→md）或 calibre 的
+  `ebook-convert` 转成 txt/md，再丢进 `books/`。
+- 入库后才能做解析2（个性化解读）。详见 `read/ARCHITECTURE.md`。
