@@ -13,7 +13,11 @@
   };
 
   const els = {
+    libraryHome: document.getElementById("libraryHome"),
+    libraryList: document.getElementById("libraryList"),
+    libraryMeta: document.getElementById("libraryMeta"),
     reader: document.getElementById("reader"),
+    shelfButton: document.getElementById("shelfButton"),
     tocButton: document.getElementById("tocButton"),
     settingsButton: document.getElementById("settingsButton"),
     tocDrawer: document.getElementById("tocDrawer"),
@@ -54,6 +58,7 @@
   let ticking = false;
   let lastScrollY = 0;
   let chromeTimer = 0;
+  let currentView = "library";
   const darkMatcher = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
 
   function readJson(key) {
@@ -163,13 +168,43 @@
     });
   }
 
-  function renderShelf() {
-    const groups = library.documents.reduce((acc, item) => {
+  function renderLibrary() {
+    const groups = groupDocuments();
+    const total = library.documents.length;
+    els.libraryMeta.textContent = `${total} 本内容，点一本开始阅读`;
+    els.libraryList.innerHTML = Array.from(groups.entries())
+      .map(([category, items]) => {
+        const books = items
+          .map((item) => {
+            const progress = readProgress(item.id).progress || 0;
+            return `<button class="library-book" type="button" data-document-id="${escapeHtml(item.id)}">
+              <span class="library-book-main">
+                <strong>${escapeHtml(item.title)}</strong>
+                <em>${escapeHtml(item.description || item.subtitle || item.source || "")}</em>
+              </span>
+              <span class="library-progress">${Math.round(progress * 100)}%</span>
+            </button>`;
+          })
+          .join("");
+        return `<section class="library-category">
+          <h2>${escapeHtml(category)}</h2>
+          ${books}
+        </section>`;
+      })
+      .join("");
+  }
+
+  function groupDocuments() {
+    return library.documents.reduce((acc, item) => {
       const category = item.category || "未分类";
       if (!acc.has(category)) acc.set(category, []);
       acc.get(category).push(item);
       return acc;
     }, new Map());
+  }
+
+  function renderShelf() {
+    const groups = groupDocuments();
 
     els.shelfList.innerHTML = Array.from(groups.entries())
       .map(([category, items]) => {
@@ -262,6 +297,35 @@
     updateReadingState();
   }
 
+  function enterReader(documentId, restorePosition) {
+    if (documentId && documentId !== documentData.id) {
+      switchDocument(documentId, restorePosition);
+    }
+    currentView = "reader";
+    document.body.dataset.view = "reader";
+    closePanels();
+    showChrome();
+    window.location.hash = `read-${documentData.id}`;
+    window.setTimeout(() => {
+      window.scrollTo(0, restorePosition ? documentProgress.scrollY || 0 : 0);
+      updateReadingState();
+    }, 0);
+  }
+
+  function showLibrary() {
+    if (currentView === "reader") {
+      documentProgress.scrollY = window.scrollY;
+      documentProgress.progress = currentProgress();
+      saveProgress();
+    }
+    currentView = "library";
+    document.body.dataset.view = "library";
+    closePanels();
+    renderLibrary();
+    history.replaceState(null, "", location.pathname + location.search);
+    window.scrollTo(0, 0);
+  }
+
   function openPanel(panel) {
     showChrome();
     els.scrim.hidden = false;
@@ -340,6 +404,7 @@
   }
 
   function updateReadingState() {
+    if (currentView !== "reader") return;
     const progress = currentProgress();
     const percent = Math.round(progress * 100);
     const active = currentHeading();
@@ -368,6 +433,7 @@
   }
 
   function updateChromeVisibility() {
+    if (currentView !== "reader") return;
     if (state.controlsMode === "always" || isPanelOpen()) {
       document.body.classList.remove("chrome-hidden");
       return;
@@ -402,7 +468,7 @@
   }
 
   function restoreScroll() {
-    if (location.hash) return;
+    if (currentView !== "reader" || location.hash) return;
     requestAnimationFrame(() => {
       window.scrollTo(0, Number(documentProgress.scrollY) || 0);
       updateReadingState();
@@ -410,6 +476,11 @@
   }
 
   function bindEvents() {
+    els.libraryList.addEventListener("click", (event) => {
+      const item = event.target.closest(".library-book");
+      if (item) enterReader(item.dataset.documentId, true);
+    });
+    els.shelfButton.addEventListener("click", showLibrary);
     els.tocButton.addEventListener("click", () => openPanel(els.tocDrawer));
     els.settingsButton.addEventListener("click", () => openPanel(els.settingsSheet));
     els.scrim.addEventListener("click", closePanels);
@@ -493,10 +564,16 @@
   }
 
   renderBook();
+  renderLibrary();
   renderShelf();
   renderToc();
   applySettings();
   bindEvents();
-  showChrome();
+  const hashDocumentId = location.hash.startsWith("#read-") ? location.hash.slice(6) : "";
+  if (hashDocumentId && library.documents.some((item) => item.id === hashDocumentId)) {
+    enterReader(hashDocumentId, true);
+  } else {
+    showLibrary();
+  }
   restoreScroll();
 })();

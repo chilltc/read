@@ -12,9 +12,21 @@
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
+    <section class="library-home" id="libraryHome" aria-labelledby="libraryTitle">
+      <header class="library-hero">
+        <span class="library-kicker">移动阅读</span>
+        <h1 id="libraryTitle">阅读书架</h1>
+        <p id="libraryMeta">选择一本书开始阅读</p>
+      </header>
+      <div id="libraryList" class="library-grid" aria-label="书架"></div>
+    </section>
+
     <div class="progress-track" aria-hidden="true"><div id="progressBar"></div></div>
 
     <header class="app-header">
+      <button class="icon-btn shelf-home-btn" id="shelfButton" type="button" aria-label="书架" data-tooltip="书架">
+        <span class="shelf-icon" aria-hidden="true"></span>
+      </button>
       <button class="icon-btn" id="tocButton" type="button" aria-label="目录" data-tooltip="目录">
         <span class="hamburger" aria-hidden="true"></span>
       </button>
