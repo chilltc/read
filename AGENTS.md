@@ -6,7 +6,7 @@
 
 用户说 **「解析1 X」「加本新书」「帮我解析这本书」「重新处理一下 X」**（书还没在书架里）时：
 
-→ 让用户把文件丢进 `books/`（PDF/txt/md；epub/mobi 先用 pandoc/calibre 转 txt/md），
+→ 让用户把文件丢进 `books/`（PDF/txt/md/mobi；epub 先用 pandoc/calibre 转 txt/md），
 然后跑 `python3 scripts/ingest.py`（自动发现+登记+解析，txt 会重新排版）。
 
 ## 解析2 = 解读（映射到用户的人生经历）

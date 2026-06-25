@@ -13,9 +13,9 @@
 ## 数据流
 
 ```
-   books/<书>.pdf|txt|md  +  books/manifest.json
+   books/<书>.pdf|txt|md|mobi  +  books/manifest.json
             │
-            │  python3 scripts/ingest.py     （通用解析，零 pip 依赖，用 pdftotext）
+            │  python3 scripts/ingest.py     （通用解析；PDF 用 pdftotext，MOBI 用 ebook-convert 或 mobi 包）
             ▼
        ebook-data.js   (window.EBOOK_DATA)   ← 原书内容
             │
@@ -40,8 +40,8 @@
 
 | 文件 | 职责 |
 |---|---|
-| `books/` | 拖书进来的入口。放 PDF/TXT/MD 即可——`ingest.py` 会自动登记到 manifest |
-| `books/manifest.json` | 书架清单：每本书的 id/标题/副标题/分类/源文件路径（顶部有 schema 注释）。新文件自动追加，可手动改 title 等 |
+| `books/` | 拖书进来的入口。放 PDF/TXT/MD/MOBI 即可——`ingest.py` 会自动登记到 manifest |
+| `books/manifest.json` | 书架清单：每本书的 id/标题/副标题/分类/源文件路径（顶部有 schema 注释）。新文件自动追加，可手动改 title 等；`rawSource` 用来记录已转成 md/txt 的本地原始书源 |
 | `scripts/ingest.py` | **通用** ingest：扫描 `books/` 自动发现新文件并登记，解析成 `ebook-data.js`。一条命令重建整个书架 |
 | `ebook-data.js` | 原书数据 `window.EBOOK_DATA = {libraryTitle, documents:[{id,title,blocks,outline,...}]}`。由 ingest 生成，勿手改 |
 | `brain-data.js` | 脑页数据 `window.BRAIN_DATA`。顶部有完整 schema 注释。由 brain-page 流程生成，也可手改 |
@@ -100,8 +100,9 @@ npm run check                     # node --check + 单测
 
 ## 加新书（前置步骤）
 
-把 PDF/txt/md 丢进 `read/books/`，跑 `python3 scripts/ingest.py`（会**自动发现**新文件、
-登记到 manifest 并解析）。然后才能对这本书生成脑页。详见 `read/ARCHITECTURE.md`。
+把 PDF/txt/md/mobi 丢进 `read/books/`，跑 `python3 scripts/ingest.py`（会**自动发现**新文件、
+登记到 manifest 并解析）。MOBI 需要本机有 calibre 的 `ebook-convert`，或 Python `mobi` 包。
+然后才能对这本书生成脑页。详见 `read/ARCHITECTURE.md`。
 
 ## 给接手的 AI
 

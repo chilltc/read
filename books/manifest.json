@@ -5,7 +5,8 @@
     "title": "书名（显示用）",
     "subtitle": "副标题/作者（可选）",
     "category": "书架分组名（可选，默认 未分类）",
-    "source": "相对路径，如 books/xxx.pdf / .txt / .md",
+    "source": "相对路径，如 books/xxx.pdf / .txt / .md / .mobi",
+    "rawSource": "可选：如果 source 是转换后的 md/txt，这里记录本地原始文件，避免自动扫描重复登记",
     "headings": "可选：人工指定的章节标题数组，用于覆盖自动识别（排版差的 PDF 才需要）"
   },
   "libraryTitle": "移动阅读书架",
@@ -22,7 +23,8 @@
       "title": "与天为敌",
       "subtitle": "风险探索传奇（珍藏版） · 彼得 L. 伯恩斯坦",
       "category": "投资",
-      "source": "books/against-the-gods-risk.md"
+      "source": "books/against-the-gods-risk.md",
+      "rawSource": "books/与天为敌_风险探索传奇(珍藏版) -- 彼得 L_伯恩斯坦(Bernstein P_L_) -- 2010 -- 机械工业出版社 -- 1789a67b38187e8c8b9e28fd21eb1aba -- Anna’s Archive.mobi"
     }
   ]
 }

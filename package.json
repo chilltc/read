@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "node --test tests/reader-core.test.js",
-    "check": "node --check app.js && node --check reader-core.js && node --test tests/reader-core.test.js",
+    "test": "node --test tests/reader-core.test.js && python3 -m unittest tests/test_ingest.py",
+    "check": "node --check app.js && node --check reader-core.js && node --test tests/reader-core.test.js && python3 -m unittest tests/test_ingest.py",
     "qa": "node tests/mobile-qa.js"
   },
   "devDependencies": {

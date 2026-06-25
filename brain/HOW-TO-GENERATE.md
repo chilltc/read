@@ -165,7 +165,7 @@ cd read && python3 -m http.server 8081      # 打开对应书
 ## 加新书（前置步骤 = 解析1）
 
 把书丢进 `read/books/`，跑 `python3 scripts/ingest.py`（自动发现新文件、登记、解析）。
-- 支持 PDF / txt / md；txt 会被重新分段排版。
-- **epub / mobi**：当前 ingest 走文本抽取，先用 `pandoc`（epub→md）或 calibre 的
-  `ebook-convert` 转成 txt/md，再丢进 `books/`。
+- 支持 PDF / txt / md / mobi；txt/mobi 会被重新分段排版。
+- **mobi**：可直接丢进 `books/`，本机需要 calibre 的 `ebook-convert`，或 Python `mobi` 包。
+- **epub**：先用 `pandoc`（epub→md）或 calibre 的 `ebook-convert` 转成 txt/md，再丢进 `books/`。
 - 入库后才能做解析2（个性化解读）。详见 `read/ARCHITECTURE.md`。

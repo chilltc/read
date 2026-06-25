@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""通用书架 ingest：把 books/ 里的 PDF/TXT/MD 转成 ebook-data.js。
+"""通用书架 ingest：把 books/ 里的 PDF/TXT/MD/MOBI 转成 ebook-data.js。
 
 用法：
     python3 scripts/ingest.py            # 扫描 books/，自动登记新书并重建书架
@@ -7,7 +7,8 @@
 设计目标（替代旧的 build_ebook.py / build_library.py）：
 - 零手工登记：直接把文件丢进 books/，脚本自动发现并写进 manifest.json（用文件名当 id/标题）。
 - 不为每本书手写代码：解析逻辑通用。
-- 零额外依赖：默认用 pdftotext（poppler）抽取文本，无需 pip 安装。
+- 零强制 pip 依赖：PDF 默认用 pdftotext；MOBI 优先用 calibre 的 ebook-convert，
+  没有 calibre 时可选用 Python mobi 包。
 - 数据隔离：只写 ebook-data.js，绝不碰 brain-data.js（脑页）。
 
 章节识别是启发式的，对排版差的 PDF 不保证 100% 准确。
@@ -19,8 +20,12 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
+import zipfile
+from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,6 +33,15 @@ MANIFEST = ROOT / "books" / "manifest.json"
 DATA_FILE = ROOT / "ebook-data.js"
 
 FULL_STOP = tuple("。！？；：.!?;:）】》”’")
+
+MOBI_HELP = (
+    "无法解析 MOBI。请先安装 Calibre（提供 ebook-convert），"
+    "或安装 Python 包：python3 -m pip install mobi。"
+)
+
+
+class MobiConversionError(RuntimeError):
+    pass
 
 
 def clean_line(line: str) -> str:
@@ -98,10 +112,200 @@ def pdf_to_text(path: Path) -> str:
     return result.stdout
 
 
+def read_text_lossy(path: Path) -> str:
+    data = path.read_bytes()
+    for encoding in ("utf-8", "utf-16", "gb18030"):
+        try:
+            return data.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+    return data.decode("utf-8", errors="replace")
+
+
+class HTMLToText(HTMLParser):
+    BLOCK_TAGS = {
+        "address",
+        "article",
+        "aside",
+        "blockquote",
+        "body",
+        "br",
+        "dd",
+        "div",
+        "dl",
+        "dt",
+        "figcaption",
+        "figure",
+        "footer",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "header",
+        "hr",
+        "li",
+        "main",
+        "nav",
+        "ol",
+        "p",
+        "pre",
+        "section",
+        "table",
+        "tbody",
+        "td",
+        "tfoot",
+        "th",
+        "thead",
+        "tr",
+        "ul",
+    }
+    SKIP_TAGS = {"script", "style", "noscript"}
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.lines: list[str] = []
+        self.current: list[str] = []
+        self.skip_depth = 0
+        self.heading_depth: int | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
+        if tag in self.SKIP_TAGS:
+            self.skip_depth += 1
+            return
+        if self.skip_depth:
+            return
+        if tag in self.BLOCK_TAGS:
+            self.flush()
+        if re.match(r"^h[1-6]$", tag):
+            self.heading_depth = min(int(tag[1]), 3)
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        if tag in self.SKIP_TAGS and self.skip_depth:
+            self.skip_depth -= 1
+            return
+        if self.skip_depth:
+            return
+        if tag in self.BLOCK_TAGS:
+            self.flush()
+
+    def handle_data(self, data: str) -> None:
+        if self.skip_depth:
+            return
+        if data:
+            self.current.append(data)
+
+    def flush(self) -> None:
+        text = clean_line("".join(self.current))
+        self.current = []
+        if text:
+            if self.heading_depth:
+                text = f"{'#' * self.heading_depth} {text}"
+            self.lines.append(text)
+        self.heading_depth = None
+
+    def get_text(self) -> str:
+        self.flush()
+        return "\n\n".join(self.lines).strip()
+
+
+def html_to_text(html: str) -> str:
+    parser = HTMLToText()
+    parser.feed(html)
+    parser.close()
+    return parser.get_text()
+
+
+def html_file_to_text(path: Path) -> str:
+    return html_to_text(read_text_lossy(path))
+
+
+def epub_to_text(path: Path) -> str:
+    with zipfile.ZipFile(path) as archive:
+        html_names = [
+            name
+            for name in archive.namelist()
+            if name.lower().endswith((".html", ".xhtml", ".htm"))
+            and not Path(name).name.lower().startswith(("cover", "nav", "toc"))
+        ]
+        if not html_names:
+            raise SystemExit(f"从 MOBI 抽取出的 EPUB 没有可读 HTML：{path}")
+        parts = []
+        for name in sorted(html_names):
+            data = archive.read(name)
+            parts.append(html_to_text(data.decode("utf-8", errors="replace")))
+    return "\n\n".join(part for part in parts if part).strip()
+
+
+def mobi_via_calibre(path: Path) -> str | None:
+    converter = shutil.which("ebook-convert")
+    if not converter:
+        return None
+    with tempfile.TemporaryDirectory(prefix="read-mobi-") as tmp:
+        output = Path(tmp) / f"{path.stem}.txt"
+        try:
+            subprocess.run(
+                [converter, str(path), str(output)],
+                check=True,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+        except subprocess.CalledProcessError as exc:
+            stderr = (exc.stderr or "").strip()
+            raise MobiConversionError(f"ebook-convert 解析 MOBI 失败：{path.name}\n{stderr}") from exc
+        return read_text_lossy(output)
+
+
+def mobi_via_python_package(path: Path) -> str:
+    try:
+        import mobi  # type: ignore
+    except ImportError as exc:
+        raise SystemExit(MOBI_HELP) from exc
+
+    tempdir = None
+    try:
+        tempdir, extracted = mobi.extract(str(path))
+        extracted_path = Path(extracted)
+        suffix = extracted_path.suffix.lower()
+        if suffix == ".pdf":
+            return pdf_to_text(extracted_path)
+        if suffix == ".epub":
+            return epub_to_text(extracted_path)
+        if suffix in {".html", ".htm", ".xhtml"}:
+            return html_file_to_text(extracted_path)
+        return read_text_lossy(extracted_path)
+    finally:
+        if tempdir:
+            shutil.rmtree(tempdir, ignore_errors=True)
+
+
+def mobi_to_text(path: Path) -> str:
+    calibre_error = None
+    try:
+        text = mobi_via_calibre(path)
+        if text is not None:
+            return text
+    except MobiConversionError as exc:
+        calibre_error = str(exc)
+
+    try:
+        return mobi_via_python_package(path)
+    except SystemExit as exc:
+        if calibre_error:
+            raise SystemExit(f"{calibre_error}\n{MOBI_HELP}") from exc
+        raise
+
+
 def read_source_text(source_path: Path) -> str:
     suffix = source_path.suffix.lower()
     if suffix == ".pdf":
         return pdf_to_text(source_path)
+    if suffix == ".mobi":
+        return mobi_to_text(source_path)
     return source_path.read_text(encoding="utf-8")
 
 
@@ -172,7 +376,7 @@ def build_document(entry: dict) -> dict:
     }
 
 
-SUPPORTED_SUFFIXES = {".pdf", ".txt", ".md"}
+SUPPORTED_SUFFIXES = {".pdf", ".txt", ".md", ".mobi"}
 
 
 def slugify(name: str) -> str:
@@ -198,6 +402,7 @@ def discover_and_register(manifest: dict) -> tuple[dict, list[str]]:
     books_dir = MANIFEST.parent
     entries = manifest.setdefault("books", [])
     registered_sources = {e.get("source") for e in entries}
+    registered_sources.update(e.get("rawSource") for e in entries)
     existing_ids = {e.get("id") for e in entries}
     new_ids: list[str] = []
 
