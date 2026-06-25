@@ -355,9 +355,44 @@ def build_blocks(text: str, override_headings: list[str]) -> tuple[list[dict], l
     return blocks, outline
 
 
+def existing_document_from_data_file(book_id: str) -> dict | None:
+    if not DATA_FILE.exists():
+        return None
+    raw = DATA_FILE.read_text(encoding="utf-8").strip()
+    prefix = "window.EBOOK_DATA = "
+    if not raw.startswith(prefix):
+        return None
+    payload = raw[len(prefix) :]
+    if payload.endswith(";"):
+        payload = payload[:-1]
+    try:
+        library = json.loads(payload)
+    except json.JSONDecodeError:
+        return None
+    for document in library.get("documents", []):
+        if document.get("id") == book_id:
+            return dict(document)
+    return None
+
+
+def reuse_existing_document(entry: dict) -> dict | None:
+    document = existing_document_from_data_file(entry["id"])
+    if not document:
+        return None
+    document["title"] = entry.get("title", document.get("title", entry["id"]))
+    document["subtitle"] = entry.get("subtitle", document.get("subtitle", ""))
+    document["category"] = entry.get("category", document.get("category", "未分类"))
+    document["source"] = Path(entry["source"]).name
+    print(f"  ! {entry['id']}: 源文件缺失，复用 ebook-data.js 中已有数据", file=sys.stderr)
+    return document
+
+
 def build_document(entry: dict) -> dict:
     source_path = (ROOT / entry["source"]).resolve()
     if not source_path.exists():
+        document = reuse_existing_document(entry)
+        if document:
+            return document
         raise SystemExit(f"源文件不存在：{entry['source']}（id={entry.get('id')}）")
 
     text = read_source_text(source_path)

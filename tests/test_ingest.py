@@ -13,6 +13,36 @@ SPEC.loader.exec_module(ingest)
 
 
 class IngestMobiTest(unittest.TestCase):
+    def test_build_document_reuses_existing_ebook_data_when_source_is_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            data_file = root / "ebook-data.js"
+            data_file.write_text(
+                'window.EBOOK_DATA = {"documents":[{"id":"old-book","title":"Old",'
+                '"subtitle":"","category":"产品","source":"missing.pdf","blocks":[{"type":"paragraph","text":"cached","page":1}],'
+                '"outline":[],"pageCount":1}]};\n',
+                encoding="utf-8",
+            )
+            entry = {
+                "id": "old-book",
+                "title": "Updated Title",
+                "subtitle": "Updated Subtitle",
+                "category": "更新分类",
+                "source": "books/missing.pdf",
+            }
+
+            with (
+                mock.patch.object(ingest, "ROOT", root),
+                mock.patch.object(ingest, "DATA_FILE", data_file),
+            ):
+                document = ingest.build_document(entry)
+
+        self.assertEqual(document["id"], "old-book")
+        self.assertEqual(document["title"], "Updated Title")
+        self.assertEqual(document["subtitle"], "Updated Subtitle")
+        self.assertEqual(document["category"], "更新分类")
+        self.assertEqual(document["blocks"][0]["text"], "cached")
+
     def test_discover_and_register_includes_mobi_files(self):
         with tempfile.TemporaryDirectory() as tmp:
             books_dir = Path(tmp) / "books"
