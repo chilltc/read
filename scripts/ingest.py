@@ -63,6 +63,10 @@ def guess_heading_depth(text: str, override_set: set[str]) -> int | None:
     md = re.match(r"^(#{1,4})\s+\S", text)
     if md:
         return min(len(md.group(1)), 3)
+    # Real headings are short labels; long prose can begin with patterns like
+    # "17、18世纪..." and should stay a paragraph.
+    if len(text) > 80:
+        return None
     if text == "Q&A":
         return 2
     # 中文一级：「一、」「二、」

@@ -8,3 +8,4 @@ ebook-data.qinghua.js
 _render-check.js
 _brain-render-test.js
 books/_*
+books/*.mobi
